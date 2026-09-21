@@ -212,7 +212,12 @@ export default function RevealScreen({ answers, onNext }: Props) {
                   <p className="text-[clamp(10px,2.8vw,11px)] tracking-[0.24em] text-[#ff6a76]">
                     {card.label}
                   </p>
-                  <p className="qr-neon-text min-h-[1.25em] text-[clamp(17px,5.4vw,25px)] leading-[1.25] font-bold break-all text-white">
+                  {/* 주소처럼 긴 값은 한 단계 작게, 줄은 낱말 사이에서만 바꿉니다("217-6/0" 처럼 숫자가 갈리지 않게). */}
+                  <p
+                    className={`qr-neon-text min-h-[1.25em] leading-[1.3] font-bold break-keep [overflow-wrap:anywhere] text-white ${
+                      card.value.length > 16 ? 'text-[clamp(15px,4.5vw,20px)]' : 'text-[clamp(17px,5.4vw,25px)]'
+                    }`}
+                  >
                     {card.value}
                   </p>
                 </motion.div>

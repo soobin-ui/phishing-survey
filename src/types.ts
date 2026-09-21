@@ -11,7 +11,7 @@ export interface QuestionDef {
 }
 
 /** 배송 정보(덫) 입력 항목 — survey.json 의 prizeFields 와 1:1. */
-export type PrizeFieldType = 'text' | 'phone' | 'textarea'
+export type PrizeFieldType = 'text' | 'phone' | 'textarea' | 'address'
 export type PrizeFieldRule = 'personName' | 'phone' | 'address'
 
 export interface PrizeFieldDef {
@@ -24,6 +24,13 @@ export interface PrizeFieldDef {
   invalidMessage?: string
   placeholder?: string
   maxLength?: number
+  /** type 이 address 일 때만 — [주소찾기] 둘레 문구 */
+  searchButton?: string
+  searchTitle?: string
+  zipPlaceholder?: string
+  detailPlaceholder?: string
+  manualPlaceholder?: string
+  searchFailMessage?: string
 }
 
 /** 빨간 화면에서 되돌려주는 카드 한 장. */

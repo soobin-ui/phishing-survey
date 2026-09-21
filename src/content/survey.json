@@ -57,7 +57,7 @@
     "note": "* 원활한 배송을 위해 정확히 입력해 주세요."
   },
 
-  "_배송항목설명": "덫으로 다시 받는 개인정보입니다. rule — personName: 한글·영문 2자 이상 / phone: 010+11자리 / address: 8자 이상. (형식만 봅니다 — 값을 저장·전송하지 않습니다.)",
+  "_배송항목설명": "덫으로 다시 받는 개인정보입니다. rule — personName: 한글·영문 2자 이상 / phone: 010+11자리 / address: 8자 이상. type — address: [주소찾기](카카오 우편번호 검색) + 상세 주소 칸. (형식만 봅니다 — 값을 저장·전송하지 않습니다.)",
   "prizeFields": [
     {
       "id": "name",
@@ -82,12 +82,18 @@
     {
       "id": "address",
       "label": "배송 받을 주소",
-      "type": "textarea",
+      "type": "address",
       "required": true,
       "rule": "address",
       "emptyMessage": "주소를 입력해 주세요.",
       "invalidMessage": "받으실 주소를 정확히 입력해 주세요.",
-      "placeholder": "도로명 주소 + 상세 주소"
+      "placeholder": "주소찾기를 눌러 주세요",
+      "searchButton": "주소찾기",
+      "searchTitle": "주소 찾기",
+      "zipPlaceholder": "우편번호",
+      "detailPlaceholder": "상세 주소 (동·호수 등)",
+      "manualPlaceholder": "도로명 주소를 직접 입력해 주세요",
+      "searchFailMessage": "주소 검색을 열 수 없어요. 직접 입력해 주세요."
     }
   ],
 

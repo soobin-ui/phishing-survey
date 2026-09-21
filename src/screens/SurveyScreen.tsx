@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { survey, questions, prizeFields } from '../lib/content'
 import { formatPhone, lines } from '../lib/format'
 import { checkPrizeField } from '../lib/validate'
+import AddressField from '../AddressField'
 import type { Answers } from '../types'
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
  * ★ 절대 원칙: 입력값을 전송·저장하지 않습니다.
  *   fetch·form action·localStorage·콘솔출력·URL전달 어느 것도 하지 않습니다.
  *   answers 는 이 컴포넌트의 메모리에만 있다가 페이지를 닫으면 사라집니다.
+ *   (유일한 외부 요청은 [주소찾기]의 카카오 검색창 — 검색어만 카카오로 가며 우리 쪽으로는 오지 않습니다.)
  */
 export default function SurveyScreen({ onSubmit }: Props) {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
@@ -241,7 +243,9 @@ export default function SurveyScreen({ onSubmit }: Props) {
                       {f.label}
                       {f.required && <span className="ml-1 text-[#ffd24d]">*</span>}
                     </label>
-                    {f.type === 'textarea' ? (
+                    {f.type === 'address' ? (
+                      <AddressField def={f} isBad={isBad} onChange={(v) => set(f.id, v)} />
+                    ) : f.type === 'textarea' ? (
                       <textarea
                         value={val}
                         onChange={(e) => set(f.id, e.target.value)}
