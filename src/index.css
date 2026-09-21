@@ -1,0 +1,947 @@
+@import 'tailwindcss';
+
+/*
+  폰트: 지마켓 산스(Gmarket Sans) — 홍보 포스터 제목과 같은 계열의 기하학적 고딕입니다.
+  - 포스터/X배너와 같은 얼굴로 보여야 관람객이 "부스 공식 페이지"로 받아들입니다.
+  - 설치 폰트를 KS X 1001 2350자로 서브셋해 직접 담았습니다(각 ~120KB).
+    CDN을 타지 않으므로 전시장 데이터망이 느려도 페이지와 같이 도착합니다.
+  - swap: 폰트가 늦게 와도 글자는 즉시 기기 기본 서체로 먼저 보입니다.
+  ※ 글자를 추가할 때 주의 — 서브셋은 KS X 1001 2350자까지만 들어 있습니다.
+     그 밖의 희귀 음절(옛한글·특수 기호 등)은 기기 기본 서체로 떨어집니다.
+*/
+@font-face {
+  font-family: 'Gmarket Sans';
+  src: url('./assets/fonts/GmarketSansMedium.subset.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gmarket Sans';
+  src: url('./assets/fonts/GmarketSansBold.subset.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans:
+    'Gmarket Sans', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR',
+    'Malgun Gothic', 'Segoe UI', system-ui, sans-serif;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* 기기 다크모드와 무관하게 항상 같은 색으로 — index.html 의 meta 와 한 쌍입니다 */
+  color-scheme: light;
+}
+
+body {
+  background: #f4f5f7;
+  color: #1a1a1a;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+  iOS Safari는 글자 크기가 16px 미만인 입력창을 탭하면 화면을 확대합니다.
+  확대되면 제출 버튼이 화면 밖으로 밀려나므로 입력 요소는 전부 16px 고정.
+*/
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 16px;
+}
+
+button {
+  font-family: inherit;
+  /*
+    ★ 실기기 터치 대응.
+      빨간 화면의 [다음] 버튼들은 세로 스크롤이 가능한 영역(overflow-y-auto) 안에 있습니다.
+      touch-action 을 두지 않으면, 손가락으로 버튼을 눌러도 브라우저가 "스크롤 시작인가?"
+      하고 잠깐 물었다가 그 탭을 스크롤로 흘려보내 클릭이 씹히는 일이 생깁니다
+      (특히 안드로이드 크롬 / iOS Safari). 자동 테스트의 합성 탭은 이 판정을 안 거쳐서
+      늘 통과하므로 눈으로는 안 보이는 함정입니다.
+      manipulation = 이 요소 위의 탭은 스크롤·확대로 넘기지 말고 바로 클릭으로 처리.
+  */
+  touch-action: manipulation;
+}
+
+/* ── 빨간 화면 애니메이션 ─────────────────────────────
+   계속 도는 것들은 CSS로 돌립니다. 저사양 휴대폰에서 JS로 돌리면 끊깁니다.
+
+   ★ 속도는 아래 두 값만 바꾸면 전부 따라옵니다.
+       --qr-rev  : 빨강 → 파랑 → 빨강 한 바퀴
+       --qr-half : 반 바퀴 = 한쪽이 번쩍이는 주기
+
+   ⚠️ --qr-half 를 0.34초보다 짧게 두지 마세요.
+      화면 대부분을 덮는 적·청색 점멸이 초당 3회를 넘으면
+      광과민성 발작 유발 기준(WCAG 2.3.1)에 걸립니다.
+      지금 0.35초 = 초당 2.9회로, 기준 안에서 낼 수 있는 거의 최대치입니다.
+      불특정 다수·미성년 관람객이 오는 부스라 이 선은 지켜야 합니다.
+
+   ★ 더 다급하게 보이게 하는 방법은 렌즈 연사입니다.
+     위 기준은 '화면의 25% 이상을 덮는' 점멸에만 적용됩니다.
+     경광봉 렌즈는 화면의 6% 정도라 해당되지 않으므로,
+     렌즈만 실제 LED 경광봉처럼 다다다닥 치게 했습니다(qr-lens-red/blue).
+     빔·화면 물듦·글씨는 --qr-half 를 따라 안전한 속도로 움직입니다.      */
+
+:root {
+  --qr-rev: 0.7s;
+  --qr-half: 0.35s;
+  --qr-red: 255, 45, 60;
+  --qr-blue: 64, 132, 255;
+}
+
+/* 왼쪽(빨강)과 오른쪽(파랑)이 번갈아 켜집니다. 실제 경광봉이 이렇게 칩니다. */
+@keyframes qr-color-red {
+  0%,
+  38% {
+    opacity: 1;
+  }
+  50%,
+  88% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes qr-color-blue {
+  0%,
+  38% {
+    opacity: 0;
+  }
+  50%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ── 경광봉(라이트바) ────────────────────────────────
+   각진 하우징 안에 렌즈 모듈이 줄지어 박혀 있고,
+   왼쪽 빨강 / 오른쪽 파랑이 번갈아 칩니다. */
+
+.qr-bar-unit {
+  position: relative;
+  width: 268px;
+}
+
+.qr-bar {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  height: 72px;
+  padding: 7px;
+  background: linear-gradient(180deg, #6b7280 0%, #2a2e36 38%, #0f1116 100%);
+  /* 양 끝을 살짝 깎아 각진 하우징처럼 */
+  clip-path: polygon(0 0, 100% 0, 96.5% 100%, 3.5% 100%);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.qr-seg {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #0b0d12;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+/* 렌즈 결 — 각진 느낌을 살리는 대각선 컷 */
+.qr-seg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0.2) 0 1px,
+    rgba(0, 0, 0, 0.34) 1px 3px,
+    rgba(255, 255, 255, 0) 3px 9px
+  );
+}
+
+.qr-seg-lens {
+  position: absolute;
+  inset: 0;
+}
+
+.qr-seg-red .qr-seg-lens {
+  background: linear-gradient(180deg, #ff7078 0%, #f01223 46%, #8e0009 100%);
+  box-shadow: 0 0 22px 5px rgba(var(--qr-red), 0.85);
+  animation: qr-lens-red var(--qr-rev) linear infinite;
+}
+
+.qr-seg-blue .qr-seg-lens {
+  background: linear-gradient(180deg, #85b9ff 0%, #1258e8 46%, #062059 100%);
+  box-shadow: 0 0 22px 5px rgba(var(--qr-blue), 0.85);
+  animation: qr-lens-blue var(--qr-rev) linear infinite;
+}
+
+/*
+  렌즈 연사 — 짧게 세 번 치고 한 번 길게 물었다가 반대쪽으로 넘깁니다.
+  실제 LED 경광봉이 이 패턴으로 칩니다. 이게 '다급함'을 만듭니다.
+  꺼져도 완전히 죽이지 않습니다(0.1). 새까맣게 꺼지면 구멍처럼 보입니다.
+*/
+@keyframes qr-lens-red {
+  0%,
+  4% {
+    opacity: 1;
+  }
+  5%,
+  8% {
+    opacity: 0.1;
+  }
+  9%,
+  13% {
+    opacity: 1;
+  }
+  14%,
+  17% {
+    opacity: 0.1;
+  }
+  18%,
+  22% {
+    opacity: 1;
+  }
+  23%,
+  26% {
+    opacity: 0.1;
+  }
+  27%,
+  44% {
+    opacity: 1;
+  }
+  45%,
+  100% {
+    opacity: 0.1;
+  }
+}
+
+@keyframes qr-lens-blue {
+  0%,
+  49% {
+    opacity: 0.1;
+  }
+  50%,
+  54% {
+    opacity: 1;
+  }
+  55%,
+  58% {
+    opacity: 0.1;
+  }
+  59%,
+  63% {
+    opacity: 1;
+  }
+  64%,
+  67% {
+    opacity: 0.1;
+  }
+  68%,
+  72% {
+    opacity: 1;
+  }
+  73%,
+  76% {
+    opacity: 0.1;
+  }
+  77%,
+  94% {
+    opacity: 1;
+  }
+  95%,
+  100% {
+    opacity: 0.1;
+  }
+}
+
+/* 하우징 위 크롬 라인 */
+.qr-bar-lip {
+  position: relative;
+  height: 5px;
+  margin: -1px auto 0;
+  width: 94%;
+  background: linear-gradient(180deg, #8e949f 0%, #34383f 60%, #14161b 100%);
+}
+
+/* 받침 다리 */
+.qr-bar-feet {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 26px;
+}
+
+.qr-bar-feet span {
+  display: block;
+  width: 40px;
+  height: 15px;
+  background: linear-gradient(180deg, #3a3e46 0%, #14161b 70%, #08090d 100%);
+  clip-path: polygon(0 0, 100% 0, 84% 100%, 16% 100%);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
+}
+
+/* 바닥에 고이는 빛 — 허공에 떠 있어 보이지 않게 */
+.qr-bar-floor {
+  position: absolute;
+  left: 50%;
+  bottom: -30px;
+  width: 340px;
+  height: 62px;
+  margin-left: -170px;
+  filter: blur(16px);
+}
+
+.qr-floor-red,
+.qr-floor-blue {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.qr-floor-red {
+  background: radial-gradient(
+    closest-side,
+    rgba(var(--qr-red), 0.45),
+    rgba(var(--qr-red), 0) 74%
+  );
+  animation: qr-color-red var(--qr-rev) ease-in-out infinite;
+}
+
+.qr-floor-blue {
+  background: radial-gradient(
+    closest-side,
+    rgba(var(--qr-blue), 0.45),
+    rgba(var(--qr-blue), 0) 74%
+  );
+  animation: qr-color-blue var(--qr-rev) ease-in-out infinite;
+}
+
+/* ── 빛 ─────────────────────────────────────────────
+   경광봉은 세로축으로 도는 회전등이 아니라, 좌우 렌즈가 번갈아 치는 것입니다.
+   왼쪽은 늘 빨강, 오른쪽은 늘 파랑. 서로 번갈아 켜집니다.
+   길이는 화면 폭 기준(vw)이라 가장자리에 닿기 전에 사그라듭니다. */
+
+.qr-bar-anchor {
+  position: absolute;
+  left: 50%;
+  top: 40px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* 하우징 좌·우 렌즈 무리에서 번지는 빛 */
+.qr-halo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 340px;
+  height: 340px;
+  margin: -170px 0 0 -170px;
+}
+
+.qr-halo-l {
+  transform: translateX(-66px);
+}
+
+.qr-halo-r {
+  transform: translateX(66px);
+}
+
+.qr-halo-red,
+.qr-halo-blue {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.qr-halo-red {
+  background: radial-gradient(
+    closest-side,
+    rgba(var(--qr-red), 0.55) 0%,
+    rgba(var(--qr-red), 0.14) 36%,
+    rgba(var(--qr-red), 0) 72%
+  );
+  animation: qr-color-red var(--qr-rev) ease-in-out infinite;
+}
+
+.qr-halo-blue {
+  background: radial-gradient(
+    closest-side,
+    rgba(var(--qr-blue), 0.55) 0%,
+    rgba(var(--qr-blue), 0.14) 36%,
+    rgba(var(--qr-blue), 0) 72%
+  );
+  animation: qr-color-blue var(--qr-rev) ease-in-out infinite;
+}
+
+.qr-beam {
+  position: absolute;
+  top: 0;
+  width: 115vw;
+  height: 145vw;
+  margin-top: -72.5vw;
+  filter: blur(30px);
+}
+
+/* 빛이 나오는 지점을 각 렌즈 무리 한가운데로 옮깁니다 */
+.qr-beam-right {
+  left: 66px;
+  --qr-beam-dir: 90deg;
+  clip-path: polygon(0 48.6%, 100% 17%, 100% 83%, 0 51.4%);
+}
+
+.qr-beam-left {
+  right: 66px;
+  --qr-beam-dir: 270deg;
+  clip-path: polygon(100% 48.6%, 0 17%, 0 83%, 100% 51.4%);
+}
+
+.qr-beam-red,
+.qr-beam-blue {
+  position: absolute;
+  inset: 0;
+}
+
+/* 화면 가장자리에 닿기 전에 완전히 사그라들어야 잘린 티가 안 납니다 */
+.qr-beam-red {
+  background: linear-gradient(
+    var(--qr-beam-dir),
+    rgba(var(--qr-red), 0.68) 0%,
+    rgba(var(--qr-red), 0.3) 14%,
+    rgba(var(--qr-red), 0.08) 28%,
+    rgba(var(--qr-red), 0) 42%
+  );
+  animation: qr-color-red var(--qr-rev) ease-in-out infinite;
+}
+
+.qr-beam-blue {
+  background: linear-gradient(
+    var(--qr-beam-dir),
+    rgba(var(--qr-blue), 0.68) 0%,
+    rgba(var(--qr-blue), 0.3) 14%,
+    rgba(var(--qr-blue), 0.08) 28%,
+    rgba(var(--qr-blue), 0) 42%
+  );
+  animation: qr-color-blue var(--qr-rev) ease-in-out infinite;
+}
+
+/* ── 1단계(전송 로그)용 경광등 불빛 ─────────────────── */
+@keyframes qr-beacon {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.qr-beacon {
+  animation: qr-beacon var(--qr-half) ease-in-out infinite;
+}
+
+/* ── 화면 전체가 물드는 섬광 ────────────────────────
+   흰색 스트로브가 아니라 색으로만 물들여서 눈에 덜 때립니다. */
+.qr-screenflash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.qr-screenflash-red,
+.qr-screenflash-blue {
+  position: absolute;
+  inset: 0;
+}
+
+.qr-screenflash-red {
+  background: radial-gradient(
+    130% 78% at 34% 30%,
+    rgba(var(--qr-red), 0.4),
+    rgba(var(--qr-red), 0) 74%
+  );
+  animation: qr-color-red var(--qr-rev) ease-in-out infinite;
+}
+
+.qr-screenflash-blue {
+  background: radial-gradient(
+    130% 78% at 66% 30%,
+    rgba(var(--qr-blue), 0.4),
+    rgba(var(--qr-blue), 0) 74%
+  );
+  animation: qr-color-blue var(--qr-rev) ease-in-out infinite;
+}
+
+/* ── 경광봉 불빛을 받는 글씨 ─────────────────────────
+   opacity 가 아니라 filter 로 처리해야 등장 애니메이션과 부딪히지 않습니다. */
+@keyframes qr-lit {
+  0%,
+  100% {
+    filter: brightness(1.15) drop-shadow(0 0 24px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 3px 16px rgba(0, 0, 0, 0.85));
+  }
+  50% {
+    filter: brightness(0.8) drop-shadow(0 0 4px rgba(255, 255, 255, 0.08))
+      drop-shadow(0 3px 16px rgba(0, 0, 0, 0.85));
+  }
+}
+
+.qr-lit {
+  animation: qr-lit var(--qr-half) ease-in-out infinite;
+}
+
+/*
+  ★ 안전(광과민성) — '동작 줄이기'를 켠 관람객에게는 경광봉의 적·청 점멸을 멈춥니다.
+    이 점멸(약 초당 2.9회, 화면 대부분을 덮는 적↔청)이 광과민성 발작을 유발할 수 있는
+    바로 그 패턴이고, 점멸에 민감한 사람일수록 기기에서 '동작 줄이기'를 켜 두는 경우가
+    많습니다. 그래서 그 설정을 존중해 여기서는 불을 '켜진 채로 멈춘' 정지 화면으로 둡니다
+    (애니메이션만 끄면 각 요소가 0% 상태 — 빨강 켜짐/파랑 꺼짐 — 로 고정됩니다).
+    나머지 점멸(네온·타자 커서 등)은 각자의 블록에서 이미 꺼집니다. */
+@media (prefers-reduced-motion: reduce) {
+  .qr-screenflash-red,
+  .qr-screenflash-blue,
+  .qr-lit,
+  .qr-beacon,
+  .qr-beam-red,
+  .qr-beam-blue,
+  .qr-halo-red,
+  .qr-halo-blue,
+  .qr-floor-red,
+  .qr-floor-blue,
+  .qr-seg-lens {
+    animation: none !important;
+  }
+}
+
+/* ── 시네마틱 마감 ──────────────────────────────────
+   가장자리를 눌러 화면 가운데로 시선을 모으고,
+   아주 옅은 필름 그레인으로 CG 티를 뺍니다. 둘 다 움직이지 않습니다. */
+.qr-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 86% at 50% 44%,
+    rgba(0, 0, 0, 0) 46%,
+    rgba(0, 0, 0, 0.34) 84%,
+    rgba(0, 0, 0, 0.66) 100%
+  );
+}
+
+.qr-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+  background-size: 140px 140px;
+}
+
+/* 큰 글씨가 들어올 때 화면이 한 번 흔들립니다 */
+@keyframes qr-jolt {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  12% {
+    transform: translate3d(-6px, 4px, 0);
+  }
+  26% {
+    transform: translate3d(5px, -4px, 0);
+  }
+  40% {
+    transform: translate3d(-4px, -2px, 0);
+  }
+  56% {
+    transform: translate3d(3px, 2px, 0);
+  }
+  72% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.qr-jolt {
+  animation: qr-jolt 0.5s ease-out both;
+}
+
+/* ── [0] 시작 화면 — 홍보 포스터와 같은 얼굴 ─────────────
+   포스터(A4·X배너)의 하늘색 그라디언트 + 보케 + 컨페티 + 금색 아크 +
+   남색 하단 밴드를 CSS로 다시 그렸습니다. 이미지가 아니라 벡터/그라디언트라
+   어떤 화면 비율에서도 깨지지 않고, 추가 다운로드도 없습니다.
+
+   ★ 색은 포스터 원본 픽셀에서 그대로 뽑았습니다.
+       하늘색  #A9D6FD → #8FC4FB
+       남색    #263B7C
+       금색    #FECA36                                        */
+
+:root {
+  --ps-navy: #263b7c;
+  --ps-navy-deep: #1c2e63;
+  --ps-gold: #feca36;
+  --ps-sky-top: #a9d6fd;
+  --ps-sky-mid: #8fc4fb;
+}
+
+.ps-sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(115% 62% at 50% 0%, rgba(214, 238, 255, 0.95) 0%, rgba(214, 238, 255, 0) 62%),
+    linear-gradient(
+      180deg,
+      var(--ps-sky-top) 0%,
+      var(--ps-sky-mid) 38%,
+      #9ccbfa 66%,
+      #8bbdf7 100%
+    );
+}
+
+/* 포스터의 흐릿한 동그라미들 — 뒤에서 은은하게 떠 있습니다 */
+.ps-bokeh {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0));
+  filter: blur(0.5px);
+}
+
+/* 컨페티 조각 — 색종이가 흩날린 자리에서 아주 천천히 흔들립니다 */
+.ps-confetti {
+  position: absolute;
+  border-radius: 2px;
+  will-change: transform;
+  animation: ps-float 7s ease-in-out infinite;
+}
+
+@keyframes ps-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--ps-rot));
+  }
+  50% {
+    transform: translate3d(0, -9px, 0) rotate(calc(var(--ps-rot) + 8deg));
+  }
+}
+
+/* 반짝임 */
+.ps-spark {
+  position: absolute;
+  /* --ps-spark-o: 별빛마다 다른 최대 밝기(PosterBackground.tsx의 o 값) */
+  animation: ps-twinkle 3.4s ease-in-out infinite;
+}
+
+@keyframes ps-twinkle {
+  0%,
+  100% {
+    opacity: calc(var(--ps-spark-o, 1) * 0.2);
+    transform: scale(0.78);
+  }
+  50% {
+    opacity: var(--ps-spark-o, 1);
+    transform: scale(1.12);
+  }
+}
+
+/* 제목 — 남색 테두리 + 두꺼운 그림자.
+   paint-order 로 획을 글자 뒤에 깔아야 안쪽이 파먹히지 않습니다.
+   (미지원 브라우저에서는 획이 절반 안쪽으로 들어와 글자가 조금 굵어 보일 뿐,
+    읽는 데는 지장이 없습니다.)
+
+   ★ 테두리 두께는 글자 크기에 맞춰 --ps-stroke 로 조절합니다.
+     40px 글자에 7px, 26px 글자에 5px 정도가 포스터와 같은 비율입니다. */
+.ps-outline {
+  paint-order: stroke fill;
+  -webkit-text-stroke-width: var(--ps-stroke, 7px);
+  -webkit-text-stroke-color: var(--ps-navy);
+  text-stroke-color: var(--ps-navy);
+}
+
+/* 제목 덩어리에 거는 두꺼운 그림자 — 글자 하나하나가 아니라 줄 전체에 겁니다 */
+.ps-title-shadow {
+  filter: drop-shadow(0 4px 0 rgba(28, 46, 99, 0.35)) drop-shadow(0 10px 16px rgba(24, 44, 96, 0.3));
+}
+
+/* 캐릭터가 배경 위에 떠 보이지 않도록 바닥 그림자를 깔아줍니다 */
+.ps-mascot-shadow {
+  filter: drop-shadow(0 14px 12px rgba(30, 60, 120, 0.28));
+}
+
+/* 눌리는 버튼 */
+.ps-cta {
+  box-shadow:
+    0 6px 0 #d9a316,
+    0 14px 24px rgba(24, 44, 96, 0.42);
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
+}
+
+.ps-cta:active {
+  transform: translateY(5px);
+  box-shadow:
+    0 1px 0 #d9a316,
+    0 6px 12px rgba(24, 44, 96, 0.4);
+}
+
+/* 손가락 탭 유도 — 버튼이 아주 살짝 숨 쉽니다 */
+@keyframes ps-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.018);
+  }
+}
+
+.ps-breathe {
+  animation: ps-breathe 2.6s ease-in-out infinite;
+}
+
+/* 움직임을 불편해하는 관람객을 위해 — 기기 설정을 따릅니다 */
+@media (prefers-reduced-motion: reduce) {
+  .ps-confetti,
+  .ps-spark,
+  .ps-breathe,
+  .ps-pop,
+  .ps-pop-ring {
+    animation: none !important;
+  }
+}
+
+/* 캐릭터 크기 — 두 마스코트는 포스터에서 오려낸 그대로라 서로의 크기 비가 이미 맞습니다.
+   그래서 한 변수(--ps-m)로 같이 키우고 줄입니다. 따로 만지면 비율이 깨집니다.
+     세로가 긴 화면에서는 크게, 폭이 좁은 화면에서는 폭에 맞춰 작게.
+     58vw 는 둘을 나란히 놓았을 때 좌우 여백을 넘지 않는 상한입니다. */
+.ps-mascots {
+  --ps-m: clamp(140px, min(31vh, 58vw), 300px);
+}
+
+.ps-mascot-l {
+  height: var(--ps-m);
+  width: auto;
+}
+
+.ps-mascot-r {
+  /* 오른쪽 캐릭터 원본 높이 비율(644/727) — 포스터에서의 크기 차이를 그대로 지킵니다 */
+  height: calc(var(--ps-m) * 0.886);
+  width: auto;
+}
+
+/* 포스터의 남색 리본 — 양 끝이 안쪽으로 깎인 띠 */
+.ps-ribbon {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 50%, 100% 100%, 0 100%, 14px 50%);
+}
+
+/* ── 부스 유도 표지판 — 쉬지 않고 통통 튀는 노란 판 ────
+   체험이 끝난 사람의 눈이 마지막으로 붙잡혀야 하는 곳이라
+   멈추는 구간 없이 계속 튑니다.
+
+   ★ 그냥 커졌다 작아지는 게 아니라 '통통'으로 보이게 하는 두 가지 —
+       transform-origin 을 바닥(50% 100%)에 둬서 판이 바닥을 딛고 뜨게,
+       그리고 뜰 때는 세로로 늘리고 착지할 때는 납작하게 눌러줍니다.
+
+   ⚠️ 밝기가 깜빡이는 게 아니라 크기·위치만 변하고, 한 번 도는 데 1.05초(약 1Hz)라
+      광과민성 기준(초당 3회)과는 무관합니다. 빨간 화면의 --qr-half 와는 다른 이야기. */
+@keyframes ps-pop {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  16% {
+    /* 바닥을 차기 직전 살짝 웅크림 */
+    transform: translateY(0) scale(1.02, 0.972);
+  }
+  38% {
+    /* 가장 높이 떠서 세로로 늘어난 순간 */
+    transform: translateY(-7px) scale(0.985, 1.03);
+  }
+  60% {
+    /* 착지 — 납작하게 눌립니다 */
+    transform: translateY(0) scale(1.03, 0.962);
+  }
+  78% {
+    /* 작게 한 번 더 */
+    transform: translateY(-2px) scale(0.995, 1.012);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+.ps-pop {
+  transform-origin: 50% 100%;
+  animation: ps-pop 1.05s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 착지할 때 바닥에서 번지는 금색 빛 — 판 뒤에 깔립니다.
+   ★ 흐리게(blur) 깔아야 '빛'으로 보입니다. 또렷한 사각형으로 두면
+     남색 위에서 회색 테두리처럼 죽어 보입니다. */
+@keyframes ps-pop-ring {
+  0%,
+  40% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  62% {
+    opacity: 0.5;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+}
+
+.ps-pop-ring {
+  filter: blur(13px);
+  animation: ps-pop-ring 1.05s ease-out infinite;
+}
+
+/* ── 유출 기록의 타자 커서 ───────────────────────────
+   지금 찍히고 있는 줄 끝에서 깜빡입니다. */
+@keyframes qr-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.qr-caret {
+  animation: qr-caret 0.9s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-caret {
+    animation: none !important;
+  }
+}
+
+/* ── 빨간 화면 1·2단계 — 검은 바탕의 네온 경고 ──────────
+   유출 기록과 마지막 문구가 올라가는 바탕입니다. */
+.qr-night {
+  background:
+    radial-gradient(80% 55% at 50% 20%, rgba(190, 20, 30, 0.42), rgba(0, 0, 0, 0) 70%),
+    repeating-linear-gradient(90deg, rgba(255, 60, 60, 0.05) 0 2px, rgba(0, 0, 0, 0) 2px 6px),
+    #05060a;
+}
+
+/* 네온 — 빨간 유리관에 불이 들어온 것처럼 번지고, 1초에 한 번 꺼졌다 켜집니다.
+
+   ⚠️ 1Hz 입니다. 광과민성 발작 유발 기준이 초당 3회이므로 그 3분의 1 —
+      더 다급하게 만들고 싶어도 이 위로는 올리지 마세요.
+      불특정 다수·미성년 관람객이 오는 부스입니다. */
+.qr-neon {
+  filter: drop-shadow(0 0 6px #ff2d3c) drop-shadow(0 0 18px #ff2d3c)
+    drop-shadow(0 0 42px rgba(255, 45, 60, 0.7));
+  animation: qr-neon 1s ease-in-out infinite;
+}
+
+@keyframes qr-neon {
+  0%,
+  46%,
+  100% {
+    opacity: 1;
+  }
+  52% {
+    opacity: 0.28;
+  }
+  60% {
+    opacity: 1;
+  }
+}
+
+/* [경고] 상자 */
+.qr-neon-tag {
+  border: 3px solid #ff2d3c;
+  color: #ff5666;
+  text-shadow: 0 0 10px rgba(255, 45, 60, 0.9);
+  box-shadow:
+    0 0 16px rgba(255, 45, 60, 0.5),
+    inset 0 0 16px rgba(255, 45, 60, 0.25);
+}
+
+/* 흰 글씨에 빨간 빛이 배어 나오게 */
+.qr-neon-text {
+  text-shadow:
+    0 0 12px rgba(255, 60, 70, 0.8),
+    0 0 34px rgba(255, 45, 60, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-neon {
+    animation: none !important;
+  }
+}
+
+/* 네온 번짐만(점멸 없음). 삼각형·[경고]·제목을 한 덩어리로 함께 깜빡이게 할 때,
+   각자 따로 깜빡이면 박자가 어긋나 화면 전체로는 더 자주 번쩍이는 셈이 됩니다.
+   그래서 번짐(그림자)만 여기서 주고, 점멸은 셋을 감싼 .qr-blink-group 이 한 번에 겁니다. */
+.qr-neon-still {
+  filter: drop-shadow(0 0 6px #ff2d3c) drop-shadow(0 0 18px #ff2d3c)
+    drop-shadow(0 0 42px rgba(255, 45, 60, 0.7));
+}
+
+/* 삼각형 + [경고] + '개인정보 유출' 을 같은 박자로 함께 깜빡입니다.
+   ⚠️ 1Hz — 위 .qr-neon 과 같은 이유로 이보다 빠르게 하지 마세요(광과민성). */
+.qr-blink-group {
+  animation: qr-neon 1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-blink-group {
+    animation: none !important;
+  }
+}
+
+/* ── 전송 중 화면의 차오르는 막대 ────────────────────
+   시간은 SendingScreen 이 ui.json 의 holdMs 를 그대로 넘겨줍니다. */
+@keyframes qr-sending-bar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.qr-sending-bar {
+  width: 0%;
+  animation-name: qr-sending-bar;
+  animation-timing-function: cubic-bezier(0.35, 0.6, 0.5, 1);
+  animation-fill-mode: forwards;
+}
+
+/* 움직임을 불편해하는 관람객 — 막대는 채워 둔 채로 둡니다(진행은 그대로 됩니다) */
+@media (prefers-reduced-motion: reduce) {
+  .qr-sending-bar {
+    width: 100%;
+    animation: none !important;
+  }
+}

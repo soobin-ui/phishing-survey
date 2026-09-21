@@ -1,0 +1,48 @@
+/* ============================================================
+   설문판 전용 (sv-*) — 크림색 만족도 조사 화면.
+   응모판(하늘색 ps-*)과 헷갈리지 않게 색·질감을 다르게 씁니다.
+   빨간 화면(qr-*)과 폰트·타일라인드는 index.css 를 공유합니다.
+   ============================================================ */
+
+/* 크림색 물방울 바탕 — 설문 포스터와 같은 얼굴 */
+.sv-cream {
+  background-color: #ffe9a8;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 0 8px, rgba(255, 255, 255, 0) 9px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 0 8px, rgba(255, 255, 255, 0) 9px),
+    linear-gradient(180deg, #fff3c8 0%, #ffe9a8 60%, #ffdf8e 100%);
+  background-position: 0 0, 42px 42px, 0 0;
+  background-size: 84px 84px, 84px 84px, 100% 100%;
+}
+
+/* 금색 제목 — 남색 테두리 + 그림자(포스터 제목과 같은 처리) */
+.sv-gold {
+  color: #feca36;
+  -webkit-text-stroke: 2px #263b7c;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 rgba(38, 59, 124, 0.22);
+}
+
+/* 눌리는 버튼 — 아래 그림자가 눌릴 때 사라지며 딸깍 */
+.sv-cta {
+  box-shadow: 0 6px 0 rgba(28, 45, 99, 0.28);
+  transition:
+    transform 0.06s ease,
+    box-shadow 0.06s ease;
+  touch-action: manipulation;
+}
+.sv-cta:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(28, 45, 99, 0.28);
+}
+
+/* 입력창 16px 미만이면 iOS Safari 가 확대하며 버튼을 밀어냅니다 — 16px 고정 */
+.sv-cream input,
+.sv-cream textarea {
+  font-size: 16px;
+}
+
+/* 캐릭터 바닥 그림자 */
+.sv-mascot-shadow {
+  filter: drop-shadow(0 12px 10px rgba(38, 59, 124, 0.22));
+}
