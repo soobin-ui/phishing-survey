@@ -52,7 +52,7 @@ export default function BoothScreen() {
         />
 
         <motion.p
-          className="mt-6 text-[14px] font-bold break-keep text-[#feca36]"
+          className="mt-6 text-[clamp(16px,4.7vw,19px)] leading-snug font-bold break-keep text-[#feca36]"
           variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.9 } } }}
         >
           {ui.booth.thanks}
