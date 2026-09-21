@@ -19,13 +19,13 @@ interface Props {
  *     1) done   — 가짜 "신청 완료". 흔한 폼의 끝 화면 그대로 안심시킵니다.
  *     2) twist  — 체크가 물음표로 바뀌고, 흰 화면이 남색으로 가라앉습니다.
  *     3) record — 오늘의 체험 기록. 앞 줄은 '체험 완료', 마지막 줄에만 빨간 도장.
- *     4) punch  — "다 배우셨는데, 왜 또 적으셨나요?" + 혼내지 않고 받아 주는 한 줄.
- *     5) tricks — 이번에 속은 3가지(reveal.after 그대로).
+ *     4) punch  — "다 배우셨는데, 왜 또 적으셨나요?" + 속은 3가지 + 혼내지 않고 받아 주는 한 줄.
+ *                 (2026-09-21 사용자 요청으로 두 화면을 하나로 합침 — 간단하게)
  *
  * ★ 소리·경광등·점멸이 없습니다(광과민성 걱정도 없음). 진동은 도장 찍힐 때 한 번.
  * ★ answers 는 여기서도 화면에 되돌려 보여 주기만 합니다. 전송·저장 없음.
  */
-type Stage = 'done' | 'twist' | 'record' | 'punch' | 'tricks'
+type Stage = 'done' | 'twist' | 'record' | 'punch'
 
 const R = reveal.rewind
 const NAVY = '#16224d'
@@ -267,21 +267,22 @@ export default function RewindScreen({ answers, onNext }: Props) {
         </div>
       </Layer>
 
-      {/* ── 4단계 · 한 방 문구 ── */}
+      {/* ── 4단계 · 한 방 문구 + 속은 3가지 (한 화면) ── */}
+      {/* "왜 또 적으셨나요?"라는 물음에 바로 아래 세 줄이 답합니다. 정리 멘트는 마지막 화면(BoothScreen)이 맡습니다. */}
       <Layer active={stage === 'punch'}>
         <motion.div
           className="w-full max-w-[400px] text-center"
           initial="hidden"
           animate={stage === 'punch' ? 'show' : 'hidden'}
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.36, delayChildren: 0.4 } } }}
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.3, delayChildren: 0.4 } } }}
         >
           {punchLines.map((line, i) => (
             <motion.p
               key={i}
               className={`leading-[1.26] font-bold tracking-tight break-keep ${
                 i === punchLines.length - 1
-                  ? 'sv-gold text-[clamp(30px,8.6vw,38px)]'
-                  : 'text-[clamp(27px,7.6vw,34px)] text-white'
+                  ? 'sv-gold text-[clamp(28px,8.4vw,38px)]'
+                  : 'text-[clamp(24px,7.2vw,34px)] text-white'
               }`}
               variants={{
                 hidden: { opacity: 0, y: 16 },
@@ -292,8 +293,28 @@ export default function RewindScreen({ answers, onNext }: Props) {
             </motion.p>
           ))}
 
+          <div className="mt-[clamp(16px,3.4vh,30px)] w-full space-y-[clamp(7px,1.3vh,10px)]">
+            {R.punch.tricks.map((t, i) => (
+              <motion.div
+                key={i}
+                className="flex items-center gap-3 rounded-2xl bg-[#fff6d6] px-4 py-[clamp(9px,1.6vh,12px)] text-left"
+                variants={{
+                  hidden: { opacity: 0, x: -16 },
+                  show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: 'easeOut' } },
+                }}
+              >
+                <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#e8245c] text-[14px] font-bold text-white">
+                  {i + 1}
+                </span>
+                <span className="text-[clamp(14px,4.1vw,17px)] leading-snug font-bold break-keep text-[#22315f]">
+                  {t}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+
           <motion.p
-            className="mx-auto mt-8 w-fit rounded-2xl bg-white/[0.08] px-5 py-3.5 text-[clamp(16px,4.6vw,19px)] leading-[1.45] font-bold break-keep text-white"
+            className="mt-[clamp(16px,3.2vh,28px)] text-[clamp(17px,4.9vw,21px)] leading-[1.4] font-bold break-keep text-white"
             variants={{
               hidden: { opacity: 0, y: 12 },
               show: { opacity: 1, y: 0, transition: { duration: 1, ease: 'easeOut' } },
@@ -307,7 +328,7 @@ export default function RewindScreen({ answers, onNext }: Props) {
           </motion.p>
 
           <motion.p
-            className="mt-6 text-[13px] leading-relaxed text-white/50"
+            className="mt-[clamp(10px,2vh,18px)] text-[clamp(12px,3.3vw,13px)] leading-relaxed text-white/50"
             variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 1 } } }}
           >
             {lines(R.punch.note).map((l, i) => (
@@ -318,10 +339,10 @@ export default function RewindScreen({ answers, onNext }: Props) {
           </motion.p>
 
           <motion.button
-            onClick={() => setStage('tricks')}
-            onTap={() => setStage('tricks')}
+            onClick={onNext}
+            onTap={onNext}
             data-role="punch-next"
-            className="mt-8 h-14 w-full rounded-2xl bg-white text-[17px] font-bold text-[#16224d]"
+            className="mt-[clamp(14px,3vh,28px)] h-[clamp(50px,8.6vh,56px)] w-full rounded-2xl bg-white text-[17px] font-bold text-[#16224d]"
             whileTap={{ scale: 0.97 }}
             variants={{
               hidden: { opacity: 0, y: 14 },
@@ -329,81 +350,6 @@ export default function RewindScreen({ answers, onNext }: Props) {
             }}
           >
             {R.punch.nextButton}
-          </motion.button>
-        </motion.div>
-      </Layer>
-
-      {/* ── 5단계 · 속은 3가지 수법 (문구는 reveal.after 그대로) ── */}
-      <Layer active={stage === 'tricks'}>
-        <motion.div
-          className="w-full max-w-[400px] px-1 text-center"
-          initial="hidden"
-          animate={stage === 'tricks' ? 'show' : 'hidden'}
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.26, delayChildren: 0.35 } } }}
-        >
-          <motion.p
-            className="text-[clamp(15px,4.2vw,18px)] break-keep text-white/65"
-            variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.9 } } }}
-          >
-            {reveal.after.lead}
-          </motion.p>
-          {reveal.after.lines.map((line, i) => (
-            <motion.p
-              key={i}
-              className="mt-1 text-[clamp(24px,7vw,30px)] leading-[1.3] font-bold tracking-tight break-keep text-white"
-              variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.95 } } }}
-            >
-              {line}
-            </motion.p>
-          ))}
-
-          <div className="mt-6 w-full space-y-2.5">
-            {reveal.after.tricks.map((t, i) => (
-              <motion.div
-                key={i}
-                className="flex items-center gap-3 rounded-2xl bg-[#fff6d6] px-4 py-3 text-left"
-                variants={{
-                  hidden: { opacity: 0, x: -16 },
-                  show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: 'easeOut' } },
-                }}
-              >
-                <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-[#e8245c] text-[15px] font-bold text-white">
-                  {i + 1}
-                </span>
-                <span className="text-[clamp(15px,4.2vw,17px)] leading-snug font-bold break-keep text-[#22315f]">
-                  {t}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.p
-            className="mt-6 text-[clamp(17px,4.9vw,21px)] leading-snug font-bold break-keep text-[#feca36]"
-            variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.95 } } }}
-          >
-            {reveal.after.highlight}
-          </motion.p>
-
-          <motion.p
-            className="mt-6 text-[clamp(24px,7vw,31px)] leading-[1.38] font-bold break-keep text-white"
-            variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 1.1 } } }}
-          >
-            {reveal.after.closing.map((line, i) => (
-              <span key={i} className="block">
-                {line}
-              </span>
-            ))}
-          </motion.p>
-
-          <motion.button
-            onClick={onNext}
-            onTap={onNext}
-            data-role="after-next"
-            className="mt-[clamp(18px,4vh,36px)] h-14 w-full rounded-2xl border border-white/45 text-[17px] font-bold text-white active:bg-white/10"
-            whileTap={{ scale: 0.97 }}
-            variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.8 } } }}
-          >
-            {reveal.after.nextButton}
           </motion.button>
         </motion.div>
       </Layer>
