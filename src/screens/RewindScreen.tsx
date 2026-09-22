@@ -18,7 +18,7 @@ interface Props {
  *   그래서 여기서는 겁주지 않고, 방금 한 행동을 돌려 보여 줍니다.
  *     1) done   — 가짜 "신청 완료" + 가짜 [확인]. 흔한 폼의 끝 화면 그대로 안심시킵니다.
  *                 [확인]을 누르면 그 자리에서 바로 뒤집힙니다 — 나가려고 누른 손가락이 방아쇠.
- *                 안 누르면 doneMs(1.3초) 뒤 자동. (2026-09-22: "완료 보고 바로 화면 끌 것 같다"는 지적)
+ *                 기본은 [확인]을 기다리고, 안 누르면 doneMs(8초) 뒤에야 자동. (2026-09-22 사용자 지시: 안 눌렀는데 넘어가면 안 됨)
  *     2) twist  — 체크가 물음표로 바뀌고, 흰 화면이 남색으로 가라앉습니다.
  *     3) record — 오늘의 체험 기록. 앞 줄은 '체험 완료', 마지막 줄에만 빨간 도장.
  *     4) punch  — "체험을 다 마치고도 왜 또 적으셨을까요?" + 속은 3가지 + 혼내지 않고 받아 주는 한 줄.
@@ -47,6 +47,8 @@ export default function RewindScreen({ answers, onNext }: Props) {
 
   useEffect(() => {
     if (stage === 'done') {
+      // 기본은 [확인]을 기다립니다. doneMs 는 안 누르는 사람을 위한 안전장치(0 이면 없음).
+      if (!R.timing.doneMs) return
       const t = window.setTimeout(toTwist, R.timing.doneMs)
       return () => clearTimeout(t)
     }
