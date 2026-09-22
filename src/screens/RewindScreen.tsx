@@ -16,7 +16,9 @@ interface Props {
  *
  *   참가자는 30분 전에 그 경고 화면을 이미 봤습니다. 같은 걸 또 띄우면 "아, 또 그거네"로 끝납니다.
  *   그래서 여기서는 겁주지 않고, 방금 한 행동을 돌려 보여 줍니다.
- *     1) done   — 가짜 "신청 완료". 흔한 폼의 끝 화면 그대로 안심시킵니다.
+ *     1) done   — 가짜 "신청 완료" + 가짜 [확인]. 흔한 폼의 끝 화면 그대로 안심시킵니다.
+ *                 [확인]을 누르면 그 자리에서 바로 뒤집힙니다 — 나가려고 누른 손가락이 방아쇠.
+ *                 안 누르면 doneMs(1.3초) 뒤 자동. (2026-09-22: "완료 보고 바로 화면 끌 것 같다"는 지적)
  *     2) twist  — 체크가 물음표로 바뀌고, 흰 화면이 남색으로 가라앉습니다.
  *     3) record — 오늘의 체험 기록. 앞 줄은 '체험 완료', 마지막 줄에만 빨간 도장.
  *     4) punch  — "체험을 다 마치고도 왜 또 적으셨을까요?" + 속은 3가지 + 혼내지 않고 받아 주는 한 줄.
@@ -40,9 +42,12 @@ export default function RewindScreen({ answers, onNext }: Props) {
   const [stamped, setStamped] = useState(false)
   const [ready, setReady] = useState(false)
 
+  // [확인] 탭과 자동 진행이 겹쳐도 한 번만 넘어갑니다.
+  const toTwist = () => setStage((s) => (s === 'done' ? 'twist' : s))
+
   useEffect(() => {
     if (stage === 'done') {
-      const t = window.setTimeout(() => setStage('twist'), R.timing.doneMs)
+      const t = window.setTimeout(toTwist, R.timing.doneMs)
       return () => clearTimeout(t)
     }
     if (stage === 'twist') {
@@ -74,13 +79,13 @@ export default function RewindScreen({ answers, onNext }: Props) {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-white" data-role="rewind" data-stage={stage}>
-      {/* 흰 화면이 남색으로 '가라앉습니다' — 번쩍이지 않고 1.6초에 걸쳐 천천히. */}
+      {/* 흰 화면이 남색으로 '가라앉습니다' — 번쩍이지 않고 1초에 걸쳐. [확인]을 누른 직후라 더 느리면 안 눌린 줄 압니다. */}
       <motion.div
         className="absolute inset-0"
         style={{ backgroundColor: NAVY }}
         initial={{ opacity: 0 }}
         animate={{ opacity: dark ? 1 : 0 }}
-        transition={{ duration: 1.6, ease: 'easeInOut' }}
+        transition={{ duration: 1.0, ease: 'easeInOut' }}
       />
 
       {/* ── 1·2단계 · 가짜 신청 완료 → 잠깐만요 ── */}
@@ -144,11 +149,27 @@ export default function RewindScreen({ answers, onNext }: Props) {
               </p>
               <p className="mt-3 text-[15px] break-keep text-gray-500">{R.done.sub}</p>
             </Swap>
-            <Swap show={stage === 'twist'} delay={0.5}>
+            <Swap show={stage === 'twist'} delay={0.25}>
               <p className="text-[28px] leading-[1.3] font-bold break-keep text-white">{R.twist.title}</p>
               <p className="mt-3 text-[17px] break-keep text-white/70">{R.twist.sub}</p>
             </Swap>
           </div>
+
+          {/* 가짜 [확인] — 흔한 폼의 그 버튼. 누르면 즉시 twist. 뒤집히는 동안 사라집니다. */}
+          <motion.button
+            type="button"
+            onClick={toTwist}
+            onTap={toTwist}
+            data-role="done-confirm"
+            className="mt-2 h-14 w-full rounded-2xl bg-[#263b7c] text-[17px] font-bold text-white"
+            style={{ pointerEvents: stage === 'done' ? 'auto' : 'none' }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={stage === 'done' ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }}
+            transition={{ duration: stage === 'done' ? 0.5 : 0.25, delay: stage === 'done' ? 0.45 : 0 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            {R.done.button}
+          </motion.button>
         </div>
       </Layer>
 
